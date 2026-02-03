@@ -23,10 +23,44 @@ export function createGame(): GameState {
   };
 }
 
-export function makeMove(state: GameState, position: number): GameState {
-  return state
+export function makeMove(gameState: GameState, position: number): GameState {
+  if (!Number.isInteger(position)){
+    throw new Error("Position must be an integer")
+  }
+  if (position < 0 || position > 8) {
+    throw new Error("Position must be between 0 and 8")
+  }
+  if (gameState.board[position] !==null) {
+    throw new Error("Position is already occupied")}
+  if (getWinner(gameState) !== null){
+    throw new Error("Game is already over")
+  }
+  const newBoard = [...gameState.board]
+  newBoard[position] = gameState.currentPlayer
+  const nextPlayer = gameState.currentPlayer === "X" ? "O" : "X"  
+  return {
+    board: newBoard as Board, 
+    currentPlayer: nextPlayer,
+  }
 }
 
-export function getWinner(state: GameState): Player | null {
+export function getWinner(gameState: GameState): Player | null {
+
+const winningCombos = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8], 
+  [0, 3, 6], [1, 4, 7], [2, 5, 8], 
+  [0, 4, 8], [2, 4, 6],
+]
+
+for (const combo of winningCombos) {
+  const a = gameState.board[combo[0]]
+  const b = gameState.board[combo[1]]
+  const c = gameState.board[combo[2]]
+
+  if (a !== null && a === b && b === c ){
+    return a
+  }
+}
+
   return null;
 }
