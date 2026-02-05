@@ -14,16 +14,18 @@ export type Board = [Cell, Cell, Cell, Cell, Cell, Cell, Cell, Cell, Cell];
 export type GameState = {
   board: Board;
   currentPlayer: Player;
+  id: string;
 };
 
-export function createGame(): GameState {
+export function createGame(id: string): GameState {
   return {
+    id,
     board: [null, null, null, null, null, null, null, null, null],
     currentPlayer: "X",
   };
 }
 
-export function makeMove(gameState: GameState, position: number): GameState {
+export function makeMove(gameState: GameState, position: number,): GameState {
   if (!Number.isInteger(position)){
     throw new Error("Position must be an integer")
   }
@@ -39,6 +41,7 @@ export function makeMove(gameState: GameState, position: number): GameState {
   newBoard[position] = gameState.currentPlayer
   const nextPlayer = gameState.currentPlayer === "X" ? "O" : "X"  
   return {
+    id: gameState.id,
     board: newBoard as Board, 
     currentPlayer: nextPlayer,
   }

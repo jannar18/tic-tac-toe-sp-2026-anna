@@ -57,7 +57,7 @@ function App() {
                 }}
               >
                 {gameState.board[position]}
-                </td>
+              </td>
             )
           })}
         </tr>
