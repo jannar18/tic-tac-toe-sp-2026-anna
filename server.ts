@@ -24,7 +24,7 @@ app.post("/move", (req,res) => {
 app.post("/reset", (req,res) => {
     gameState = createGame();
     res.json(gameState);
-});
+})
 
 ViteExpress.listen(app, 3000, () => console.log("Server is listening..."));
 
