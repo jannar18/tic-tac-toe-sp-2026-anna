@@ -1,8 +1,16 @@
-import { useState } from "react";
-import { createGame, makeMove, getWinner } from "./tic-tac-toe";
+import { useState, useEffect } from "react";
+import { createGame , getWinner } from "./tic-tac-toe";
+
+
 
 function App() {
   let [gameState, setGameState] = useState(getInitialGame())
+
+  useEffect(() => {
+    fetch("/game")
+      .then((res) => res.json())
+      .then((data) => setGameState(data));
+  }, []);
 
  const winningmessageColor = getWinner(gameState) === "X" ? "#D4785A" : getWinner(gameState) === "O" ? "#0C4B4A" :"#7A6B3A"
  const messageColor = gameState.currentPlayer === "X" ? "#D4785A" : gameState.currentPlayer === "O" ? "#0C4B4A" :"#7A6B3A"
@@ -38,7 +46,11 @@ function App() {
                  }}
                 onClick={() => {
                   if (gameState.board[position] === null) {
-                    setGameState(makeMove(gameState, position))
+                    fetch("/move", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ position }),
+                    })
                   }
                 }}
               >
