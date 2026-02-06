@@ -103,7 +103,7 @@ app.ws("/game/:id/ws", (ws, req) => {
 
 
 ViteExpress.bind(app, server).then(() => {
-    server.listen(3000,() => console.log("Server is listening..."));
+    server.listen(process.env.PORT || 3000,() => console.log("Server is listening..."));
 });
 
 export default app;

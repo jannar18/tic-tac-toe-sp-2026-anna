@@ -33,8 +33,10 @@ function App() {
       if (hasConnected.current) return;
     
     hasConnected.current = true;
-
-    const ws = new WebSocket(`ws://localhost:3000/game/${gameState.id}/ws`);
+    
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new 
+    WebSocket(`${protocol}//${window.location.host}/game/${gameState.id}/ws`);
     wsRef.current = ws;
 
     ws.onopen = () => {
