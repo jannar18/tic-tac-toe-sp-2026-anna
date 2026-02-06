@@ -19,7 +19,7 @@ export type GameState = {
 
 export function createGame(id: string): GameState {
   return {
-    id,
+    id:id,
     board: [null, null, null, null, null, null, null, null, null],
     currentPlayer: "X",
   };

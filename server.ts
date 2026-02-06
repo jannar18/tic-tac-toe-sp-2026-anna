@@ -33,8 +33,8 @@ app.post("/create", (_,res) => {
 });
 
 app.get("/games", (_,res) => {
-    const ids = Object.keys(games);
-    res.json(ids);
+    const allGames = Object.values(games);
+    res.json(allGames);
 })
 
 app.post("/move", (req,res) => {
