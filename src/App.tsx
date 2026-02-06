@@ -1,11 +1,13 @@
-import { useState, useEffect, type CSSProperties } from "react";
+import { useState, useEffect, type CSSProperties, useRef, useCallback } from "react";
 import { type GameState, getWinner } from "./tic-tac-toe";
 
 
 function App() {
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [gameList, setGameList] = useState<GameState[]>([])
-
+  const hasConnected = useRef(false);
+  const wsRef = useRef<WebSocket | null>(null);
+    
   const containerStyle: CSSProperties = {
     display: "flex",                                                        
     flexDirection: "column",                                                
@@ -16,6 +18,7 @@ function App() {
     color: "#7A6B3A",                                                       
     fontSize: "30px"
   }
+
   useEffect(() => {
     if (gameState === null) {
       fetch("/games")
@@ -23,6 +26,42 @@ function App() {
         .then((data) => setGameList(data));
     }
   }, [gameState]);
+
+    const connectWebSocket = useCallback(() => {
+    
+      if (gameState ===null) return;
+      if (hasConnected.current) return;
+    
+    hasConnected.current = true;
+
+    const ws = new WebSocket(`ws://localhost:3000/game/${gameState.id}/ws`);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("Client joined game:", gameState.id);
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error", error);
+    };
+
+    ws.onmessage = (event) => {
+      const updateGame = JSON.parse(event.data);
+      setGameState(updateGame);
+    };
+  }, [gameState?.id]);
+
+    useEffect(() => {
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+      }
+      hasConnected.current = false;
+    };
+  }, [connectWebSocket]);
 
   if (gameState === null) {
     return (
@@ -98,8 +137,14 @@ function App() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ gameId: gameState.id, position }),
                       })
-                        .then((res) => res.json())
-                        .then((data) => setGameState(data));
+                        .then((res) => {
+                          if (!res.ok) return null; 
+                          return res.json();
+                        })
+                        .then((data) => {
+                          if (data) setGameState(data);
+                        });
+          
                     }
                   }}
                 >
@@ -115,7 +160,7 @@ function App() {
         <button 
           style={{
           backgroundColor: "#DBBCB4",
-          padding: "20px, 40px",
+          padding: "20px 40px",
           margin: "40px"
           }}
           onClick={() => setGameState(null)}>Head Back to Lobby
