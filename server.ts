@@ -1,12 +1,26 @@
 import express from "express";
+import expressWs from "express-ws";
 import ViteExpress from "vite-express";
 import { type GameState, createGame, makeMove, } from "./src/tic-tac-toe.ts"
 import { humanId } from "human-id";
+import type {WebSocket} from "ws";
 
-const app = express();
+const { app } = expressWs(express());
 app.use(express.json());
 
 let games: Record<string, GameState> = {};
+
+const gameConnections = new Map<string, Set<WebSocket>>();
+
+function broadcastGameUpdate(gameId: string, gameState: GameState) {
+    const clients = gameConnections.get(gameId);
+    if (clients) {
+        const message = JSON.stringify(gameState);
+        for (const client of clients) {
+            client.send(message);
+        }
+    }
+}
 
 //Test endpoint
 
@@ -48,6 +62,7 @@ app.post("/move", (req,res) => {
 
     try {
         games[gameId] = makeMove(game, position);
+        broadcastGameUpdate(gameId, games[gameId]);
         res.json(games[gameId]);
     } 
     catch (error) {
@@ -59,6 +74,29 @@ app.post("/reset-all", (_,res) => {
     games = {};
     res.json({success: true});
 });
+
+// WebSocket endpoints
+
+app.ws("/game/:id/ws", (ws, req) => {
+    const gameId = req.params.id;
+
+    if (!gameConnections.has(gameId)) {
+        gameConnections.set(gameId, new Set());
+    }
+
+        gameConnections.get(gameId)!.add(ws);
+        console.log(`Client joined game: ${gameId}`)
+
+    ws.on("close", () => {
+        gameConnections.get(gameId)?.delete(ws);
+        console.log(`Client left game: ${gameId}`);
+    });
+
+    ws.on("error", (error) => {
+        console.error(`WebSocket error for game ${gameId}:`, error);
+    });
+});
+
 
 ViteExpress.listen(app, 3000, () => console.log("Server is listening..."));
 

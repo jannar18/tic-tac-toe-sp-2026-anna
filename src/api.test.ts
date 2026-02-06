@@ -11,6 +11,7 @@ describe("POST /create", () => {
     it("returns a game with an ID", async () => {
         const response = await request(app)
         .post("/create")
+        
         .expect(200);
 
         expect(response.body.id).toBeDefined();
@@ -38,7 +39,7 @@ describe("POST /create", () => {
                                                                                 
       const response = await request(app).get("/games");                   
                                                                                 
-      expect(response.body).toContain(gameId);                             
+      expect(response.body.map((game: { id: string }) => game.id)).toContain(gameId);                             
   });
     
 });
