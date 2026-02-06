@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "bun server.ts",
     "build": "tsc -b && vite build",
@@ -38,4 +41,5 @@
     "vite": "^7.2.4",
     "vitest": "^4.0.18"
   }
+
 }
