@@ -1,23 +1,21 @@
-import { useState, useEffect, type CSSProperties, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { type GameState, getWinner } from "./tic-tac-toe";
 
+function PixelIcon({ src, alt, size = "w-24 h-24" }: { src: string; alt: string; size?: string }) {
+  return <img src={src} alt={alt} className={`${size} inline-block object-contain`} style={{ imageRendering: "pixelated" }} />;
+}
+
+function symbolFor(cell: string | null, size?: string): React.ReactNode {
+  if (cell === "X") return <PixelIcon src="/snail.png" alt="Snail" size={size} />;
+  if (cell === "O") return <PixelIcon src="/flower.png" alt="Flower" size={size} />;
+  return null;
+}
 
 function App() {
-  const [gameState, setGameState] = useState<GameState | null>(null)
-  const [gameList, setGameList] = useState<GameState[]>([])
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [gameList, setGameList] = useState<GameState[]>([]);
   const hasConnected = useRef(false);
   const wsRef = useRef<WebSocket | null>(null);
-    
-  const containerStyle: CSSProperties = {
-    display: "flex",                                                        
-    flexDirection: "column",                                                
-    alignItems: "center",                                                   
-    justifyContent: "center",                                               
-    height: "100vh",                                                        
-    fontFamily: "Courier New",                                              
-    color: "#7A6B3A",                                                       
-    fontSize: "30px"
-  }
 
   useEffect(() => {
     if (gameState === null) {
@@ -27,16 +25,16 @@ function App() {
     }
   }, [gameState]);
 
-    const connectWebSocket = useCallback(() => {
-    
-      if (gameState ===null) return;
-      if (hasConnected.current) return;
-    
+  const connectWebSocket = useCallback(() => {
+    if (gameState === null) return;
+    if (hasConnected.current) return;
+
     hasConnected.current = true;
-    
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new 
-    WebSocket(`${protocol}//${window.location.host}/game/${gameState.id}/ws`);
+    const ws = new WebSocket(
+      `${protocol}//${window.location.host}/game/${gameState.id}/ws`
+    );
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -53,13 +51,13 @@ function App() {
     };
   }, [gameState?.id]);
 
-    useEffect(() => {
+  useEffect(() => {
     connectWebSocket();
 
     return () => {
       if (wsRef.current) {
-          wsRef.current.close();
-          wsRef.current = null;
+        wsRef.current.close();
+        wsRef.current = null;
       }
       hasConnected.current = false;
     };
@@ -67,108 +65,152 @@ function App() {
 
   if (gameState === null) {
     return (
-      <div style={containerStyle}>
-
-      {/* LOBBY */} 
-      <h1>Tic Tac Toe</h1>
-      {gameList.length > 0 && (
-        <div style={{
-        display: "flex",                                                            
-        flexDirection: "column",                                                    
-        alignItems: "center",                                                       
-        gap: "10px",                                                                
-        marginTop: "20px"
-      }}>
-          <h2>Join a game:</h2>
-          {gameList
-            .filter((game) => !getWinner(game) && !game.board.every((cell) => cell !== null))
-            .map((game) => (
-            <button 
-              key={game.id}
-              style={{ margin: "5px", padding: "10px 20px"}}
-              onClick={() => setGameState(game)}
-            >
-              {game.id}
-            </button>
-          ))}
-        </div>
-      )} 
-            <button 
-              style={{ margin: "5px", padding: "10px 20px"}}
-              onClick={() => {
-                fetch("/create", { method: "POST" })
-                  .then((res) => res.json())
-                  .then((data) => setGameState(data));
-              }}>New Game</button>
+      <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-base">
+        {/* LOBBY */}
+        <h1 className="text-2xl font-bold mb-4 flex items-center gap-3">
+          <PixelIcon src="/snail.png" alt="Snail" size="w-16 h-16" />
+          Snails vs Garden
+          <PixelIcon src="/flower.png" alt="Flower" size="w-16 h-16" />
+        </h1>
+        {gameList.length > 0 && (
+          <div className="flex flex-col items-center gap-2.5 mt-5">
+            <h2 className="text-sm">Join a game:</h2>
+            {gameList
+              .filter(
+                (game) =>
+                  !getWinner(game) &&
+                  !game.board.every((cell) => cell !== null)
+              )
+              .map((game) => (
+                <button
+                  key={game.id}
+                  className="m-1 px-5 py-2.5 bg-board-border/30 border border-board-border rounded-lg hover:bg-board-border/50 transition-colors cursor-pointer text-main-teal text-xs"
+                  onClick={() => setGameState(game)}
+                >
+                  {game.id}
+                </button>
+              ))}
+          </div>
+        )}
+        <button
+          className="m-1 mt-6 px-8 py-4 bg-main-teal text-white rounded-lg hover:bg-main-teal/80 transition-colors cursor-pointer text-sm font-bold"
+          onClick={() => {
+            fetch("/create", { method: "POST" })
+              .then((res) => res.json())
+              .then((data) => setGameState(data));
+          }}
+        >
+          New Game
+        </button>
       </div>
     );
   }
 
-  const winningmessageColor = getWinner(gameState) === "X" ? "#D4785A" : getWinner(gameState) === "O" ? "#0C4B4A" :"#7A6B3A"
-  const messageColor = gameState.currentPlayer === "X" ? "#D4785A" : gameState.currentPlayer === "O" ? "#0C4B4A" :"#7A6B3A"
-  
-    return (
-      <div style={containerStyle}>
+  const winner = getWinner(gameState);
+  const isTie =
+    !winner && gameState.board.every((cell) => cell !== null);
+  const isGameOver = !!winner || isTie;
 
-      {!getWinner(gameState) && !gameState.board.every((cell) => cell !== null) && <p style={{color:messageColor}}>Current player: {gameState.currentPlayer} </p>}
-      {getWinner(gameState) && <p style={{color:winningmessageColor}}>{getWinner(gameState)} wins! Woo!</p>}
-      {!getWinner(gameState) && gameState.board.every((cell) => cell !== null) && <p style={{color:winningmessageColor}}>Wahh it's a tie...</p> }
-      
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-base">
+      {/* STATUS MESSAGE */}
+      {!isGameOver && (
+        <p
+          className={
+            gameState.currentPlayer === "X"
+              ? "text-olive"
+              : "text-garden-pink"
+          }
+        >
+          <span className="flex items-center gap-2">
+            Current player: {symbolFor(gameState.currentPlayer, "w-10 h-10")}{" "}
+            {gameState.currentPlayer === "X" ? "Snails" : "Garden"}
+          </span>
+        </p>
+      )}
+      {winner === "X" && (
+        <p className="text-olive text-sm font-bold animate-winner-bounce flex items-center gap-2">
+          Oh no! The snails took over the garden! <PixelIcon src="/snail.png" alt="Snail" size="w-8 h-8" />
+        </p>
+      )}
+      {winner === "O" && (
+        <p className="text-garden-pink text-sm font-bold animate-winner-bounce flex items-center gap-2">
+          Yay! The garden is flourishing! <PixelIcon src="/flower.png" alt="Flower" size="w-8 h-8" />
+        </p>
+      )}
+      {isTie && (
+        <p className="text-main-teal text-sm">
+          The snails and flowers share the garden... it's a tie!
+        </p>
+      )}
+
       {/* GAME BOARD */}
-      <table style={{border: "1px solid #DBBCB4", borderCollapse: "collapse" }}>
+      <table className="border border-board-border border-collapse mt-4">
         <tbody>
-        {[0, 3, 6].map((rowStart) => (
-          <tr key={rowStart}>
-            {[0, 1, 2].map((col) => {
-              const position = rowStart + col 
-              return (
-                <td 
-                  key={position}
-                  style={{
-                    border:"1px solid #DBBCB4",
-                    width: "150px", height: "150px", 
-                    textAlign: "center", 
-                    fontFamily: "Courier New", 
-                    color: gameState.board[position] === "X" ? "#D4785A":"#0C4B4A",
-                    fontSize: "80px",
-                  }}
-                  onClick={() => {
-                    if (gameState.board[position] === null && !getWinner(gameState)) {
-                      fetch("/move", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ gameId: gameState.id, position }),
-                      })
-                        .then((res) => {
-                          if (!res.ok) return null; 
-                          return res.json();
+          {[0, 3, 6].map((rowStart) => (
+            <tr key={rowStart}>
+              {[0, 1, 2].map((col) => {
+                const position = rowStart + col;
+                const cellValue = gameState.board[position];
+
+                return (
+                  <td
+                    key={position}
+                    className="border border-board-border w-[150px] h-[150px] text-center cursor-pointer hover:bg-board-border/10 transition-colors"
+                    onClick={() => {
+                      if (
+                        gameState.board[position] === null &&
+                        !winner
+                      ) {
+                        fetch("/move", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            gameId: gameState.id,
+                            position,
+                          }),
                         })
-                        .then((data) => {
-                          if (data) setGameState(data);
-                        });
-          
-                    }
-                  }}
-                >
-                  {gameState.board[position]}
-                </td>
-              )
-            })}
-          </tr>
-        ))}
+                          .then((res) => {
+                            if (!res.ok) return null;
+                            return res.json();
+                          })
+                          .then((data) => {
+                            if (data) setGameState(data);
+                          });
+                      }
+                    }}
+                  >
+                    {winner ? (
+                      <span
+                        className="animate-winner-pop inline-block"
+                        style={{
+                          animationDelay: `${position * 0.12}s`,
+                          opacity: 0,
+                        }}
+                      >
+                        {symbolFor(winner)}
+                      </span>
+                    ) : (
+                      symbolFor(cellValue)
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
         </tbody>
       </table>
 
-        <button 
-          style={{
-          backgroundColor: "#DBBCB4",
-          padding: "20px 40px",
-          margin: "40px"
-          }}
-          onClick={() => setGameState(null)}>Head Back to Lobby
-        </button>
-  </div>
-);
+      <button
+        className="mt-10 px-10 py-5 bg-board-border rounded-lg hover:bg-board-border/70 transition-colors cursor-pointer text-main-teal text-xs font-bold"
+        onClick={() => setGameState(null)}
+      >
+        Head Back to Lobby
+      </button>
+    </div>
+  );
 }
 
 export default App;
