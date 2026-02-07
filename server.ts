@@ -16,14 +16,18 @@ let games: Record<string, GameState> = {};
 
 const gameConnections = new Map<string, Set<WebSocket>>();
 
-function broadcastGameUpdate(gameId: string, gameState: GameState) {
+function broadcast(gameId: string, message: object) {
     const clients = gameConnections.get(gameId);
     if (clients) {
-        const message = JSON.stringify(gameState);
+        const data = JSON.stringify(message);
         for (const client of clients) {
-            client.send(message);
+            client.send(data);
         }
     }
+}
+
+function broadcastGameUpdate(gameId: string, gameState: GameState) {
+    broadcast(gameId, { type: "gameState", payload: gameState });
 }
 
 //Test endpoint
@@ -130,6 +134,24 @@ app.ws("/game/:id/ws", (ws, req) => {
 
         gameConnections.get(gameId)!.add(ws);
         console.log(`Client joined game: ${gameId}`)
+
+    ws.on("message", (raw) => {
+        try {
+            const msg = JSON.parse(String(raw));
+            if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
+                broadcast(gameId, {
+                    type: "chat",
+                    payload: {
+                        playerName: msg.playerName || "Anonymous",
+                        text: msg.text.trim(),
+                        timestamp: Date.now(),
+                    },
+                });
+            }
+        } catch {
+            // ignore malformed messages
+        }
+    });
 
     ws.on("close", () => {
         gameConnections.get(gameId)?.delete(ws);

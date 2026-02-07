@@ -20,8 +20,15 @@ function App() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [gameList, setGameList] = useState<GameState[]>([]);
   const [role, setRole] = useState<PlayerRole>(null);
+  const [chatMessages, setChatMessages] = useState<{ playerName: string; text: string; timestamp: number }[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const hasConnected = useRef(false);
   const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
   useEffect(() => {
     if (signedIn && gameState === null) {
@@ -52,8 +59,12 @@ function App() {
     };
 
     ws.onmessage = (event) => {
-      const updateGame = JSON.parse(event.data);
-      setGameState(updateGame);
+      const msg = JSON.parse(event.data);
+      if (msg.type === "gameState") {
+        setGameState(msg.payload);
+      } else if (msg.type === "chat") {
+        setChatMessages((prev) => [...prev, msg.payload]);
+      }
     };
   }, [gameState?.id]);
 
@@ -196,21 +207,15 @@ function App() {
 
   const currentTurnName = gameState.players?.[gameState.currentPlayer] || (gameState.currentPlayer === "X" ? "Garden" : "Snails");
 
+  const sendChat = () => {
+    const text = chatInput.trim();
+    if (!text || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: "chat", playerName, text }));
+    setChatInput("");
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-sm md:text-base px-4">
-      {/* PLAYER NAMES */}
-      <div className="flex items-center gap-4 mb-2 text-[8px] md:text-xs">
-        <span className="flex items-center gap-1 text-garden-pink">
-          <PixelIcon src="/flower.png" alt="Flower" size="w-8 h-8 md:w-10 md:h-10" />
-          {flowerPlayer || "Waiting..."}
-        </span>
-        <span className="text-main-teal">vs</span>
-        <span className="flex items-center gap-1 text-olive">
-          <PixelIcon src="/snail.png" alt="Snail" size="w-8 h-8 md:w-10 md:h-10" />
-          {snailPlayer || "Waiting..."}
-        </span>
-      </div>
-
       {/* ROLE INDICATOR */}
       {role === "spectator" && (
         <p className="text-main-teal/60 text-[8px] md:text-xs mb-2">You are spectating</p>
@@ -311,11 +316,62 @@ function App() {
         </tbody>
       </table>
 
+      {/* PLAYER NAMES (below board) */}
+      <div className="flex items-center gap-4 mt-4 text-[8px] md:text-xs">
+        <span className="flex items-center gap-1 text-garden-pink">
+          <PixelIcon src="/flower.png" alt="Flower" size="w-8 h-8 md:w-10 md:h-10" />
+          {flowerPlayer || "Waiting..."}
+        </span>
+        <span className="text-main-teal">vs</span>
+        <span className="flex items-center gap-1 text-olive">
+          <PixelIcon src="/snail.png" alt="Snail" size="w-8 h-8 md:w-10 md:h-10" />
+          {snailPlayer || "Waiting..."}
+        </span>
+      </div>
+
+      {/* CHAT */}
+      <div className="mt-4 w-[260px] md:w-[370px] border border-board-border rounded-lg overflow-hidden">
+        <div className="h-[120px] md:h-[160px] overflow-y-auto px-3 py-2 bg-white/30 text-[8px] md:text-[10px]">
+          {chatMessages.length === 0 && (
+            <p className="text-main-teal/40 italic">No messages yet...</p>
+          )}
+          {chatMessages.map((msg, i) => (
+            <p key={i} className="mb-0.5">
+              <span className="font-bold">{msg.playerName}:</span> {msg.text}
+            </p>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendChat();
+          }}
+          className="flex border-t border-board-border"
+        >
+          <input
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Type a message..."
+            maxLength={200}
+            className="flex-1 px-3 py-2 text-[8px] md:text-[10px] bg-white/50 outline-none text-main-teal"
+          />
+          <button
+            type="submit"
+            className="px-3 py-2 bg-main-teal text-white text-[8px] md:text-[10px] font-bold hover:bg-main-teal/80 transition-colors cursor-pointer"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+
       <button
-        className="mt-6 md:mt-10 px-6 py-3 md:px-10 md:py-5 bg-board-border rounded-lg hover:bg-board-border/70 transition-colors cursor-pointer text-main-teal text-[8px] md:text-xs font-bold"
+        className="mt-4 md:mt-6 px-6 py-3 md:px-10 md:py-5 bg-board-border rounded-lg hover:bg-board-border/70 transition-colors cursor-pointer text-main-teal text-[8px] md:text-xs font-bold"
         onClick={() => {
           setGameState(null);
           setRole(null);
+          setChatMessages([]);
         }}
       >
         Head Back to Lobby
