@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type GameState, getWinner } from "./tic-tac-toe";
 
-function PixelIcon({ src, alt, size = "w-24 h-24" }: { src: string; alt: string; size?: string }) {
+function PixelIcon({ src, alt, size = "w-16 h-16 md:w-24 md:h-24" }: { src: string; alt: string; size?: string }) {
   return <img src={src} alt={alt} className={`${size} inline-block object-contain`} style={{ imageRendering: "pixelated" }} />;
 }
 
@@ -65,16 +65,18 @@ function App() {
 
   if (gameState === null) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-base">
+      <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-xs md:text-base px-4">
         {/* LOBBY */}
-        <h1 className="text-2xl font-bold mb-4 flex items-center gap-3">
-          <PixelIcon src="/snail.png" alt="Snail" size="w-16 h-16" />
+        <h1 className="text-sm md:text-2xl font-bold mb-4 flex flex-col md:flex-row items-center gap-2 md:gap-3 text-center">
+          <div className="flex items-center gap-2">
+            <PixelIcon src="/snail.png" alt="Snail" size="w-10 h-10 md:w-16 md:h-16" />
+            <PixelIcon src="/flower.png" alt="Flower" size="w-10 h-10 md:w-16 md:h-16" />
+          </div>
           Snails vs Garden
-          <PixelIcon src="/flower.png" alt="Flower" size="w-16 h-16" />
         </h1>
         {gameList.length > 0 && (
-          <div className="flex flex-col items-center gap-2.5 mt-5">
-            <h2 className="text-sm">Join a game:</h2>
+          <div className="flex flex-col items-center gap-2 mt-4">
+            <h2 className="text-xs md:text-sm">Join a game:</h2>
             {gameList
               .filter(
                 (game) =>
@@ -84,7 +86,7 @@ function App() {
               .map((game) => (
                 <button
                   key={game.id}
-                  className="m-1 px-5 py-2.5 bg-board-border/30 border border-board-border rounded-lg hover:bg-board-border/50 transition-colors cursor-pointer text-main-teal text-xs"
+                  className="m-1 px-4 py-2 bg-board-border/30 border border-board-border rounded-lg hover:bg-board-border/50 transition-colors cursor-pointer text-main-teal text-[8px] md:text-xs"
                   onClick={() => setGameState(game)}
                 >
                   {game.id}
@@ -93,7 +95,7 @@ function App() {
           </div>
         )}
         <button
-          className="m-1 mt-6 px-8 py-4 bg-main-teal text-white rounded-lg hover:bg-main-teal/80 transition-colors cursor-pointer text-sm font-bold"
+          className="m-1 mt-6 px-6 py-3 md:px-8 md:py-4 bg-main-teal text-white rounded-lg hover:bg-main-teal/80 transition-colors cursor-pointer text-xs md:text-sm font-bold"
           onClick={() => {
             fetch("/create", { method: "POST" })
               .then((res) => res.json())
@@ -112,7 +114,7 @@ function App() {
   const isGameOver = !!winner || isTie;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-base">
+    <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-xs md:text-base px-4">
       {/* STATUS MESSAGE */}
       {!isGameOver && (
         <p
@@ -123,23 +125,23 @@ function App() {
           }
         >
           <span className="flex items-center gap-2">
-            Current player: {symbolFor(gameState.currentPlayer, "w-10 h-10")}{" "}
+            Current player: {symbolFor(gameState.currentPlayer, "w-6 h-6 md:w-10 md:h-10")}{" "}
             {gameState.currentPlayer === "X" ? "Snails" : "Garden"}
           </span>
         </p>
       )}
       {winner === "X" && (
-        <p className="text-olive text-sm font-bold animate-winner-bounce flex items-center gap-2">
-          Oh no! The snails took over the garden! <PixelIcon src="/snail.png" alt="Snail" size="w-8 h-8" />
+        <p className="text-olive text-[10px] md:text-sm font-bold animate-winner-bounce flex items-center gap-2 text-center">
+          Oh no! The snails took over the garden! <PixelIcon src="/snail.png" alt="Snail" size="w-6 h-6 md:w-8 md:h-8" />
         </p>
       )}
       {winner === "O" && (
-        <p className="text-garden-pink text-sm font-bold animate-winner-bounce flex items-center gap-2">
-          Yay! The garden is flourishing! <PixelIcon src="/flower.png" alt="Flower" size="w-8 h-8" />
+        <p className="text-garden-pink text-[10px] md:text-sm font-bold animate-winner-bounce flex items-center gap-2 text-center">
+          Yay! The garden is flourishing! <PixelIcon src="/flower.png" alt="Flower" size="w-6 h-6 md:w-8 md:h-8" />
         </p>
       )}
       {isTie && (
-        <p className="text-main-teal text-sm">
+        <p className="text-main-teal text-[10px] md:text-sm text-center">
           The snails and flowers share the garden... it's a tie!
         </p>
       )}
@@ -156,7 +158,7 @@ function App() {
                 return (
                   <td
                     key={position}
-                    className="border border-board-border w-[150px] h-[150px] text-center cursor-pointer hover:bg-board-border/10 transition-colors"
+                    className="border border-board-border w-[100px] h-[100px] md:w-[150px] md:h-[150px] text-center cursor-pointer hover:bg-board-border/10 transition-colors"
                     onClick={() => {
                       if (
                         gameState.board[position] === null &&
@@ -204,7 +206,7 @@ function App() {
       </table>
 
       <button
-        className="mt-10 px-10 py-5 bg-board-border rounded-lg hover:bg-board-border/70 transition-colors cursor-pointer text-main-teal text-xs font-bold"
+        className="mt-6 md:mt-10 px-6 py-3 md:px-10 md:py-5 bg-board-border rounded-lg hover:bg-board-border/70 transition-colors cursor-pointer text-main-teal text-[8px] md:text-xs font-bold"
         onClick={() => setGameState(null)}
       >
         Head Back to Lobby
