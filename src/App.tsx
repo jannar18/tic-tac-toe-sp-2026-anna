@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { type GameState, getWinner } from "./tic-tac-toe";
 
-function PixelIcon({ src, alt, size = "w-[70px] h-[70px] md:w-[100px] md:h-[100px]" }: { src: string; alt: string; size?: string }) {
+function PixelIcon({ src, alt, size = "w-[80px] h-[80px] md:w-[110px] md:h-[110px]" }: { src: string; alt: string; size?: string }) {
   return <img src={src} alt={alt} className={`${size} inline-block object-contain`} style={{ imageRendering: "pixelated" }} />;
 }
 
@@ -67,10 +67,10 @@ function App() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen font-pixel text-main-teal text-xs md:text-base px-4">
         {/* LOBBY */}
-        <h1 className="text-base md:text-3xl font-bold mb-4 flex flex-col md:flex-row items-center gap-2 md:gap-3 text-center">
-          <PixelIcon src="/snail.png" alt="Snail" size="w-14 h-14 md:w-20 md:h-20" />
+        <h1 className="text-lg md:text-3xl font-bold mb-4 flex flex-col md:flex-row items-center gap-2 md:gap-3 text-center">
+          <PixelIcon src="/snail.png" alt="Snail" size="w-20 h-20 md:w-24 md:h-24" />
           Snails vs Garden
-          <PixelIcon src="/flower.png" alt="Flower" size="w-14 h-14 md:w-20 md:h-20" />
+          <PixelIcon src="/flower.png" alt="Flower" size="w-20 h-20 md:w-24 md:h-24" />
         </h1>
         {gameList.length > 0 && (
           <div className="flex flex-col items-center gap-2 mt-4">
@@ -123,19 +123,19 @@ function App() {
           }
         >
           <span className="flex items-center gap-2">
-            Current player: {symbolFor(gameState.currentPlayer, "w-8 h-8 md:w-12 md:h-12")}{" "}
+            Current player: {symbolFor(gameState.currentPlayer, "w-10 h-10 md:w-14 md:h-14")}{" "}
             {gameState.currentPlayer === "X" ? "Snails" : "Garden"}
           </span>
         </p>
       )}
       {winner === "X" && (
         <p className="text-olive text-[10px] md:text-sm font-bold animate-winner-bounce flex items-center gap-2 text-center">
-          Oh no! The snails took over the garden! <PixelIcon src="/snail.png" alt="Snail" size="w-8 h-8 md:w-10 md:h-10" />
+          Oh no! The snails took over the garden! <PixelIcon src="/snail.png" alt="Snail" size="w-10 h-10 md:w-12 md:h-12" />
         </p>
       )}
       {winner === "O" && (
         <p className="text-garden-pink text-[10px] md:text-sm font-bold animate-winner-bounce flex items-center gap-2 text-center">
-          Yay! The garden is flourishing! <PixelIcon src="/flower.png" alt="Flower" size="w-8 h-8 md:w-10 md:h-10" />
+          Yay! The garden is flourishing! <PixelIcon src="/flower.png" alt="Flower" size="w-10 h-10 md:w-12 md:h-12" />
         </p>
       )}
       {isTie && (
