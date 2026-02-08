@@ -50,6 +50,7 @@ export function makeMove(gameState: GameState, position: number,): GameState {
     id: gameState.id,
     board: newBoard as Board,
     currentPlayer: nextPlayer,
+    createdAt: gameState.createdAt,
     players: gameState.players,
   }
 }
