@@ -26,9 +26,19 @@ function App() {
   const hasConnected = useRef(false);
   const wsRef = useRef<WebSocket | null>(null);
 
+  // Lobby chat state
+  const [lobbyChatMessages, setLobbyChatMessages] = useState<{ playerName: string; text: string; timestamp: number }[]>([]);
+  const [lobbyChatInput, setLobbyChatInput] = useState("");
+  const lobbyChatEndRef = useRef<HTMLDivElement | null>(null);
+  const lobbyWsRef = useRef<WebSocket | null>(null);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  useEffect(() => {
+    lobbyChatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [lobbyChatMessages]);
 
   useEffect(() => {
     if (signedIn && gameState === null) {
@@ -36,6 +46,27 @@ function App() {
         .then((res) => res.json())
         .then((data) => setGameList(data));
     }
+  }, [signedIn, gameState]);
+
+  // Lobby WebSocket connection
+  useEffect(() => {
+    if (!signedIn || gameState !== null) return;
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${window.location.host}/lobby/ws`);
+    lobbyWsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "chat") {
+        setLobbyChatMessages((prev) => [...prev, msg.payload]);
+      }
+    };
+
+    return () => {
+      ws.close();
+      lobbyWsRef.current = null;
+    };
   }, [signedIn, gameState]);
 
   const connectWebSocket = useCallback(() => {
@@ -79,6 +110,13 @@ function App() {
       hasConnected.current = false;
     };
   }, [connectWebSocket]);
+
+  const sendLobbyChat = () => {
+    const text = lobbyChatInput.trim();
+    if (!text || !lobbyWsRef.current || lobbyWsRef.current.readyState !== WebSocket.OPEN) return;
+    lobbyWsRef.current.send(JSON.stringify({ type: "chat", playerName, text }));
+    setLobbyChatInput("");
+  };
 
   const handleSignIn = () => {
     const trimmed = nameInput.trim();
@@ -190,6 +228,44 @@ function App() {
         >
           New Game
         </button>
+
+        {/* LOBBY CHAT */}
+        <div className="mt-6 w-[260px] md:w-[370px] border border-board-border rounded-lg overflow-hidden">
+          <p className="text-[8px] md:text-[10px] px-3 py-1 bg-board-border/20 font-bold">Lobby Chat</p>
+          <div className="h-[120px] md:h-[160px] overflow-y-auto px-3 py-2 bg-white/30 text-[8px] md:text-[10px]">
+            {lobbyChatMessages.length === 0 && (
+              <p className="text-main-teal/40 italic">No messages yet... say hi!</p>
+            )}
+            {lobbyChatMessages.map((msg, i) => (
+              <p key={i} className="mb-0.5">
+                <span className="font-bold">{msg.playerName}:</span> {msg.text}
+              </p>
+            ))}
+            <div ref={lobbyChatEndRef} />
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendLobbyChat();
+            }}
+            className="flex border-t border-board-border"
+          >
+            <input
+              type="text"
+              value={lobbyChatInput}
+              onChange={(e) => setLobbyChatInput(e.target.value)}
+              placeholder="Type a message..."
+              maxLength={200}
+              className="flex-1 px-3 py-2 text-[8px] md:text-[10px] bg-white/50 outline-none text-main-teal"
+            />
+            <button
+              type="submit"
+              className="px-3 py-2 bg-main-teal text-white text-[8px] md:text-[10px] font-bold hover:bg-main-teal/80 transition-colors cursor-pointer"
+            >
+              Send
+            </button>
+          </form>
+        </div>
       </div>
     );
   }

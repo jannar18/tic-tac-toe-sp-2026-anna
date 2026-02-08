@@ -1,7 +1,7 @@
 import express from "express";
 import expressWs from "express-ws";
 import ViteExpress from "vite-express";
-import { type GameState, createGame, makeMove, } from "./src/tic-tac-toe.ts"
+import { type GameState, createGame, makeMove, getWinner } from "./src/tic-tac-toe.ts"
 import { humanId } from "human-id";
 import type { WebSocket } from "ws";
 import { createServer } from "http";
@@ -15,6 +15,30 @@ app.use(express.json());
 let games: Record<string, GameState> = {};
 
 const gameConnections = new Map<string, Set<WebSocket>>();
+const lobbyConnections = new Set<WebSocket>();
+
+function broadcastLobby(message: object) {
+    const data = JSON.stringify(message);
+    for (const client of lobbyConnections) {
+        client.send(data);
+    }
+}
+
+const STALE_GAME_MS = 30 * 60 * 1000; // 30 minutes
+
+function cleanupStaleGames() {
+    const now = Date.now();
+    for (const [id, game] of Object.entries(games)) {
+        const age = now - (game.createdAt || 0);
+        const isFinished = !!getWinner(game) || game.board.every((c) => c !== null);
+        if (isFinished || age > STALE_GAME_MS) {
+            delete games[id];
+            gameConnections.delete(id);
+        }
+    }
+}
+
+setInterval(cleanupStaleGames, 60 * 1000);
 
 function broadcast(gameId: string, message: object) {
     const clients = gameConnections.get(gameId);
@@ -72,7 +96,11 @@ app.post("/join", (req,res) => {
     }
 
     let role: "X" | "O" | "spectator";
-    if (game.players.X === null) {
+    if (game.players.X === playerName) {
+        role = "X";
+    } else if (game.players.O === playerName) {
+        role = "O";
+    } else if (game.players.X === null) {
         game.players.X = playerName;
         role = "X";
     } else if (game.players.O === null) {
@@ -87,6 +115,7 @@ app.post("/join", (req,res) => {
 });
 
 app.get("/games", (_,res) => {
+    cleanupStaleGames();
     const allGames = Object.values(games);
     res.json(allGames);
 })
@@ -163,6 +192,39 @@ app.ws("/game/:id/ws", (ws, req) => {
     });
 });
 
+
+// Lobby WebSocket for chat
+app.ws("/lobby/ws", (ws, _req) => {
+    lobbyConnections.add(ws);
+    console.log("Client joined lobby chat");
+
+    ws.on("message", (raw) => {
+        try {
+            const msg = JSON.parse(String(raw));
+            if (msg.type === "chat" && typeof msg.text === "string" && msg.text.trim()) {
+                broadcastLobby({
+                    type: "chat",
+                    payload: {
+                        playerName: msg.playerName || "Anonymous",
+                        text: msg.text.trim(),
+                        timestamp: Date.now(),
+                    },
+                });
+            }
+        } catch {
+            // ignore malformed messages
+        }
+    });
+
+    ws.on("close", () => {
+        lobbyConnections.delete(ws);
+        console.log("Client left lobby chat");
+    });
+
+    ws.on("error", (error) => {
+        console.error("Lobby WebSocket error:", error);
+    });
+});
 
 ViteExpress.bind(app, server).then(() => {
     server.listen(process.env.PORT || 3000,() => console.log("Server is listening..."));

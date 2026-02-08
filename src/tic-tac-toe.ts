@@ -15,6 +15,7 @@ export type GameState = {
   board: Board;
   currentPlayer: Player;
   id: string;
+  createdAt: number;
   players?: {
     X: string | null;
     O: string | null;
@@ -26,6 +27,7 @@ export function createGame(id: string): GameState {
     id:id,
     board: [null, null, null, null, null, null, null, null, null],
     currentPlayer: "X",
+    createdAt: Date.now(),
   };
 }
 
